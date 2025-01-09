@@ -65,19 +65,33 @@ async fn main() -> Result<(), btleplug::Error> {
                             peripheral.notifications().await?;
 
                         while let Some(x) = notification_stream.next().await {
-                            println!("Received data from {:?} {:?}", local_name,  x.value);
+                            println!("{:?}", x.value);
 
                             let data = x.value;
-                            let speed = u16::from_le_bytes([data[2], data[3]]) as f32 * 0.01;
+                            let speed = u16::from_le_bytes([data[2], data[3]]);
                             // let avg_speed = u16::from_le_bytes([data[4], data[5]]) as f32 * 0.01;
                             let cadence = u16::from_le_bytes([data[6], data[7]]) as f32 * 0.5;
-                            let dist = (data[10] as u32) | ((data[11] as u32) << 8) | ((data[12] as u32) << 16);
-                            let d = dist as f32 * 0.0006213712;
+                            let dist = (data[10] as u32) | ((data[11] as u32) << 8) | ((data[12] as u32) << 16);;
                             let power = i16::from_le_bytes([data[13], data[14]]);                        
-                            let time = u16::from_le_bytes([data[19], data[20]]);
+                            
 
-                            println!("speed: {:?}, cad: {:?}, dist: {:?}, watts: {:?}, time: {:?}", speed, cadence, d, power, time);
-                            tokio::signal::ctrl_c().await.expect("failed to listen for event");
+                            println!("{:?} speed test", u16::from_le_bytes([data[2], data[3]]));
+                            println!("{:?} avg speed test", u16::from_le_bytes([data[4], data[5]]));
+
+                            println!("{:?} avg cadence test", u16::from_le_bytes([data[8], data[9]]));
+
+
+                            let real_cadence = u16::from_le_bytes([data[6], data[7]]) / 2;
+                            let real_dist = u16::from_le_bytes([data[10], data[11]]) as f32 * 0.0006213712;
+                            let real_power = i16::from_le_bytes([data[13], data[14]]);
+                            let real_cals = u16::from_le_bytes([data[17], data[18]]);
+                            let real_hr = data[22];
+                            let real_seconds = u16::from_le_bytes([data[23], data[24]]);
+
+                            let minutes = real_seconds / 60;
+                            let remaining_seconds = real_seconds % 60;
+
+                            println!("speed: {:?}, cad: {:?}, dist: {:?}, watts: {:?}, time: {:02}:{:02}", speed, cadence, real_dist, power, minutes, remaining_seconds);
                         }
                     }
                 }
